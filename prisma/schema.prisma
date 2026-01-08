@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  password          String
+  name              String?
+  todoistToken      String?
+  todoistUserId     String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  projects          Project[]
+  tasks             Task[]
+  syncLogs          SyncLog[]
+}
+
+model Project {
+  id                String    @id @default(uuid())
+  name              String
+  description       String?
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  externalId        String?   @unique
+  lastSyncedAt      DateTime?
+  syncStatus        SyncStatus @default(PENDING)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  tasks             Task[]
+}
+
+model Task {
+  id                String    @id @default(uuid())
+  title             String
+  description       String?
+  completed         Boolean   @default(false)
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId         String?
+  project           Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  externalId        String?   @unique
+  lastSyncedAt      DateTime?
+  syncStatus        SyncStatus @default(PENDING)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model SyncLog {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entityType        String
+  entityId          String
+  action            String
+  status            String
+  error             String?
+  createdAt         DateTime  @default(now())
+}
+
+enum SyncStatus {
+  PENDING
+  SYNCED
+  FAILED
+  SYNCING
+}
